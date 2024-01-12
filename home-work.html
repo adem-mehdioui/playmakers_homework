@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Processing</title>
+</head>
+<body>
+    <input type="file" id="imageInput" accept="image/*">
+    <img id="previewImage" style="max-width: 300px; max-height: 300px;">
+    
+    <script>
+        function verifyImage(imageElement) {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            
+            canvas.width = imageElement.width;
+            canvas.height = imageElement.height;
+
+            context.drawImage(imageElement, 0, 0);
+
+            // Verify size
+            if (canvas.width !== 512 || canvas.height !== 512) {
+                alert('Please select an image with a size of 512x512 pixels.');
+                return;
+            }
+
+            // Check if only non-transparent pixels are within a circle
+            const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+            const pixels = imageData.data;
+
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = Math.min(canvas.width, canvas.height) / 2;
+
+            for (let i = 0; i < pixels.length; i += 4) {
+                const x = (i / 4) % canvas.width;
+                const y = Math.floor(i / 4 / canvas.width);
+
+                const distanceToCenter = Math.sqrt(Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2));
+
+                // Check if the pixel is outside the circle and not fully transparent
+                if (distanceToCenter > radius && pixels[i + 3] !== 0) {
+                    alert('The image contains non-transparent pixels outside the circle.');
+                    return;
+                }
+            }
+
+            // Define colors for a "happy" feeling (customize as needed)
+            const happyColors = ['#FFD700', '#FF69B4', '#00FF00', '#00CED1'];
+
+            // Check if the image colors match the "happy" colors
+            const colorSet = new Set();
+            for (let i = 0; i < pixels.length; i += 4) {
+                if (pixels[i + 3] !== 0) {
+                    const color = `rgba(${pixels[i]}, ${pixels[i + 1]}, ${pixels[i + 2]}, ${pixels[i + 3] / 255})`;
+                    colorSet.add(color);
+                }
+            }
+
+            for (const happyColor of happyColors) {
+                if (!colorSet.has(happyColor)) {
+                    alert('The image colors do not match the "happy" colors.');
+                    return;
+                }
+            }
+
+            // Your additional image verification code goes here
+            console.log('Image verification successful!');
+        }
+
+        function convertToImageObject(imageElement) {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            
+            canvas.width = imageElement.width;
+            canvas.height = imageElement.height;
+
+            context.drawImage(imageElement, 0, 0);
+
+            // Get image data
+            const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+            const pixels = imageData.data;
+
+            // Create an object to store image information
+            const imageObject = {
+                width: canvas.width,
+                height: canvas.height,
+                data: pixels,
+                type: 'image-object' // You can customize this property
+            };
+
+            return imageObject;
+        }
+
+        function processImageFromFileInput() {
+            const inputElement = document.getElementById('imageInput');
+            const previewElement = document.getElementById('previewImage');
+
+            inputElement.addEventListener('change', (event) => {
+                const file = event.target.files[0];
+
+                if (file && file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+
+                    reader.onload = (e) => {
+                        const imageUrl = e.target.result;
+                        previewElement.src = imageUrl;
+
+                        const image = new Image();
+                        image.src = imageUrl;
+
+                        image.onload = () => {
+                            verifyImage(image);
+                            // Optionally, you can also call convertToImageObject
+                            // const imageObject = convertToImageObject(image);
+                            // console.log('Image Object:', imageObject);
+                        };
+                    };
+
+                    reader.readAsDataURL(file);
+                } else {
+                    alert('Please select a valid image file.');
+                }
+            });
+        }
+
+        // Initialize the image processing for file input
+        processImageFromFileInput();
+    </script>
+</body>
+</html>
